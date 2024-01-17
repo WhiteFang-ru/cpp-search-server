@@ -1,10 +1,3 @@
-// Решите загадку: Сколько чисел от 1 до 1000 содержат как минимум одну цифру 3?
-// Напишите ответ здесь:
-// см ответ на загадку в пердыдущем коммите "riddle commit"
-// Закомитьте изменения и отправьте их в свой репозиторий.
-
-// Далее: поисковик с ранжированием по TF-IDF , итоговая работа по спринту 1, для код-ревью
-
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -58,9 +51,9 @@ struct Document {
 
 class SearchServer {
 public:
-    
+
     int document_count_ = 0; // is number of docs in "database"
-    
+
     void SetStopWords(const string& text) {
         for (const string& word : SplitIntoWords(text)) {
             stop_words_.insert(word);
@@ -70,8 +63,9 @@ public:
     void AddDocument(int document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
 
+        double TF = 1.0/words.size();
         for(const auto& word: words) {
-           word_to_document_freqs_[word][document_id] += 1.0/words.size();
+           word_to_document_freqs_[word][document_id] += TF;
         }
     }
 
@@ -143,6 +137,10 @@ private:
         return query;
     }
 
+    double CalculateIDF(const string& word) const {
+        double IDF = log((static_cast<double>(document_count_))/word_to_document_freqs_.at(word).size());
+        return IDF;
+    }
 
     vector<Document> FindAllDocuments(const Query& query) const {
         vector<Document> relevant_documents;
@@ -150,14 +148,13 @@ private:
 
         for(const auto& plus_word: query.plus_words) {
             if(word_to_document_freqs_.count(plus_word) > 0) {
-                int num_of_docs_with_plus_word = word_to_document_freqs_.at(plus_word).size();
-                double IDF = log((static_cast<double>(document_count_))/num_of_docs_with_plus_word);
+                double IDF = CalculateIDF(plus_word);
                 for(const auto& [id, TF]: word_to_document_freqs_.at(plus_word)) {
                     document_to_relevance[id] += IDF * TF;
                 }
             }
         }
-  
+
         for(const auto& minus_word: query.minus_words) {
             if(word_to_document_freqs_.count(minus_word) > 0) {
                 for (const auto& [id, rel]: word_to_document_freqs_.at(minus_word)) {
@@ -172,7 +169,7 @@ private:
             document.relevance = rel;
             relevant_documents.push_back(document);
         }
- 
+
         return relevant_documents;
     }
 };
