@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <numeric> // fucntion used is from C++20
 #include <set>
 #include <string>
 #include <utility>
@@ -82,9 +83,10 @@ public:
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, predicate);
 
+		constexpr double error_limit = 1e-6;
         sort(matched_documents.begin(), matched_documents.end(),
              [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+                 if (abs(lhs.relevance - rhs.relevance) < error_limit) {
                      return lhs.rating > rhs.rating;
                  } else {
                      return lhs.relevance > rhs.relevance;
@@ -167,10 +169,8 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
+		
         return rating_sum / static_cast<int>(ratings.size());
     }
 
